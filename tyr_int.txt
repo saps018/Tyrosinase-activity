@@ -1,0 +1,63 @@
+run("Set Measurements...", "area mean integrated display scientific redirect=None decimal=0");
+print("F", "Area", "IntDen", "revIntDen", "CTCF");
+pt = getDirectory("Welcome to Colocalization Macro. Choose your working directory! ");
+count = 1; 
+listFiles(pt); 
+function listFiles(pt) {
+	list = getFileList(pt);
+	for (q=0; q<list.length; q++) {
+		if (endsWith(list[q], ".tif"))
+		n=((count++));
+	}
+	for (i=1; i<=n ; i++) {
+		ima = pt+i+".tif"; 
+		proi = pt+i+".zip";
+		open(ima); 
+		run("8-bit");		
+		open(proi); 
+		nROI = roiManager("count");
+		p = nROI-1;
+		roiManager("Select", p);
+		run("Measure");
+		IntD = getResult("IntDen", 0);
+		Ar = getResult("Area", 0);
+		revIntD = ((Ar*255)-IntD);
+		setResult("revIntDen", 0, revIntD);
+		updateResults();
+		mID = getResult("revIntDen", 0);
+		CTCF = (revIntD - mID);
+		mean = getResult("Mean", 0);
+		setResult("CTCF", 0, CTCF);
+		updateResults();
+		l = 0;
+		nROIs = (p/2);
+		while (l< nROIs){
+			j = (2*l);
+			roiManager("Select", j);
+			run("Measure");
+			k = l+1;
+			IntD = getResult("IntDen", k);
+			Area = getResult("Area", k);
+			revIntD = ((Area*255)-IntD);
+			setResult("revIntDen", k, revIntD);
+			updateResults();
+			CTCF = (revIntD - ((255-mean)*Area));
+			setResult("CTCF", k, CTCF);
+			updateResults();
+			print(i, Area, IntD, revIntD, CTCF);
+			l = k;
+		}
+			if (isOpen("ROI Manager")) {
+				selectWindow("ROI Manager");
+				run("Close");
+			}
+		close();
+		saveAs("Measurements", pt+"Intensity"+i+".xls");
+		selectWindow ("Results");
+		run ("Close");
+
+	}	
+}
+selectWindow("Log");
+saveAs("Text", pt+"Intensity.dat");
+run ("Close");
